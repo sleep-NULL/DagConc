@@ -2,9 +2,7 @@ package com.github.dag.core.graph;
 
 import lombok.Data;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by huangyafeng on 2019/6/6.
@@ -32,6 +30,13 @@ public class Graph<T> {
      */
     private List<Integer> zeroDegreeIdx;
 
+    private Graph(T[] nodes, int[] inDegree, List<Integer>[] adjacencyList, List<Integer> zeroDegreeIdx) {
+        this.nodes = nodes;
+        this.inDegree = inDegree;
+        this.adjacencyList = adjacencyList;
+        this.zeroDegreeIdx = zeroDegreeIdx;
+    }
+
     public T getNodeByIdx(int idx) {
         return nodes[idx];
     }
@@ -46,11 +51,7 @@ public class Graph<T> {
      * @return
      */
     public Graph<T> copy() {
-        Graph copy = new Graph();
-        copy.nodes = this.nodes;
-        copy.inDegree = inDegreeCopy();
-        copy.zeroDegreeIdx = this.zeroDegreeIdx;
-        copy.adjacencyList = this.adjacencyList;
+        Graph copy = new Graph(this.nodes, inDegreeCopy(), this.adjacencyList, this.zeroDegreeIdx);
         return copy;
     }
 
@@ -102,6 +103,94 @@ public class Graph<T> {
         int[] inDegreeCopy = new int[this.inDegree.length];
         System.arraycopy(this.inDegree, 0, inDegreeCopy, 0, this.inDegree.length);
         return inDegreeCopy;
+    }
+
+    public static Builder builder() {
+        return new Builder<>();
+    }
+
+    /**
+     * 非线程安全的 Graph 构造器
+     *
+     * @param <T>
+     */
+    public static class Builder<T> {
+
+        private int idx = 0;
+
+        private Map<T, Integer> nodeMap = new HashMap<>();
+
+        private List<Edge<T>> edges = new ArrayList<>();
+
+        /**
+         * 添加一个节点
+         *
+         * @param node
+         * @return
+         */
+        public Builder<T> addNode(T node) {
+            nodeMap.put(node, idx++);
+            return this;
+        }
+
+        /**
+         * 添加一批节点
+         *
+         * @param nodes
+         * @return
+         */
+        public Builder<T> addNodes(T... nodes) {
+            for (T node : nodes) {
+                nodeMap.put(node, idx++);
+            }
+            return this;
+        }
+
+        /**
+         * 添加一个边
+         *
+         * @param from
+         * @param to
+         * @return
+         */
+        public Builder<T> addEdge(T from, T to) {
+            edges.add(Edge.<T>builder()
+                    .from(from)
+                    .to(to)
+                    .build());
+            return this;
+        }
+
+        public Graph<T> build() {
+            T[] nodes = (T[]) new Object[idx];
+            nodeMap.forEach((node, index) -> nodes[index] = node);
+            int[] inDegree = new int[idx];
+            List<Integer>[] adjacencyList = new List[idx];
+            for (Edge<T> edge : edges) {
+                Integer fromIdx = nodeMap.get(edge.getFrom());
+                Integer toIdx = nodeMap.get(edge.getTo());
+                assert fromIdx != null;
+                assert toIdx != null;
+                // 入度表加 1
+                inDegree[toIdx]++;
+                // 邻接表添加后继节点索引
+                List<Integer> adj = adjacencyList[fromIdx];
+                if (adj == null) {
+                    adj = new ArrayList<>();
+                    adjacencyList[fromIdx] = adj;
+                }
+                adj.add(toIdx);
+            }
+
+            // 入度为 0 的节点
+            List<Integer> zeroDegreeIdx = new ArrayList<>();
+            for (int i = 0; i < inDegree.length; i++) {
+                if (inDegree[i] == 0) {
+                    zeroDegreeIdx.add(i);
+                }
+            }
+            return new Graph<>(nodes, inDegree, adjacencyList, zeroDegreeIdx);
+        }
     }
 
 }
