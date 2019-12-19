@@ -115,7 +115,7 @@ public class ConcExecute<T> {
      *
      * @param <T>
      */
-    interface Handler<T> {
+    public interface Handler<T> {
         void handle(T node, long submitTime);
     }
 }
