@@ -81,9 +81,10 @@ public class ConcExecute<T> {
      * @param idx
      */
     private void iter(Handler<T> handler, T node, int idx) {
+        long submitTime = System.currentTimeMillis();
         executeBackend.execute(() -> {
             try {
-                handler.handle(node, System.currentTimeMillis());
+                handler.handle(node, submitTime);
                 latch.countDown();
             } catch (Exception e) {
                 // 确保只 interrupt 一次主线程
