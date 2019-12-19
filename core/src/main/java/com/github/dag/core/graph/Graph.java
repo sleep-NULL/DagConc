@@ -47,16 +47,6 @@ public class Graph<T> {
     }
 
     /**
-     * 生成 Graph 拷贝, 只有入度表为深拷贝
-     *
-     * @return
-     */
-    public Graph<T> copy() {
-        Graph copy = new Graph(this.nodes, inDegreeCopy(), this.adjacencyList, this.zeroDegreeIdx);
-        return copy;
-    }
-
-    /**
      * 基于拓扑排序校验是否为 DAG
      *
      * @return

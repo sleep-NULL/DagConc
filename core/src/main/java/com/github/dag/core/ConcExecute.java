@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 
 /**
  * Created by huangyafeng on 2019/6/6.
@@ -20,7 +21,7 @@ public class ConcExecute<T> {
 
     private Graph<T> graph;
 
-    private int[] inDegree;
+    private AtomicIntegerArray inDegree;
 
     private volatile Thread currentThread;
 
@@ -29,8 +30,8 @@ public class ConcExecute<T> {
     private AtomicBoolean running = new AtomicBoolean(true);
 
     public ConcExecute(Graph<T> graph, ExecutorService executeBackend) {
-        this.graph = graph.copy();
-        this.inDegree = graph.getInDegree();
+        this.graph = graph;
+        this.inDegree = new AtomicIntegerArray(graph.getInDegree());
         this.latch = new CountDownLatch(this.graph.getNodes().length);
         this.executeBackend = executeBackend;
     }
@@ -99,10 +100,8 @@ public class ConcExecute<T> {
                         for (Integer adjIdx : list) {
                             T adjNode = graph.getNodeByIdx(adjIdx);
                             // 对邻接节点的入度减 1, 若入度减到 0 则执行邻接节点任务
-                            synchronized (adjNode) {
-                                if (--inDegree[adjIdx] == 0) {
-                                    iter(handler, adjNode, adjIdx);
-                                }
+                            if (inDegree.decrementAndGet(adjIdx) == 0) {
+                                iter(handler, adjNode, adjIdx);
                             }
                         }
                     }
