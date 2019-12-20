@@ -82,8 +82,16 @@ public class ConcExecuteTest {
 
         System.out.println(graph.toString());
         ExecutorService executorService = getExecutorService(2);
-        new ConcExecute<>(graph, executorService).executeSync((node, submitTime) -> {
-            System.out.println(node.name + " : " + node.age);
+        new ConcExecute<>(graph, executorService).executeSync(new ConcExecute.Handler<Node>() {
+            @Override
+            public void handle(Node node, long submitTime) {
+                System.out.println(node.name + " : " + node.age);
+            }
+
+            @Override
+            public void cleanup(Node node) {
+                System.out.println(node.name + " : " + node.age + " cleanup");
+            }
         });
     }
 

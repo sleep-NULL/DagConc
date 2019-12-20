@@ -27,14 +27,26 @@ public class Graph<T> {
     private List<Integer>[] adjacencyList;
 
     /**
+     * 节点出度表
+     */
+    private int[] outDegree;
+
+    /**
+     * 反向邻接表
+     */
+    private List<Integer>[] reverseAdjacencyList;
+
+    /**
      * 入度为 0 的节点下标
      */
     private List<Integer> zeroDegreeIdx;
 
-    private Graph(T[] nodes, int[] inDegree, List<Integer>[] adjacencyList, List<Integer> zeroDegreeIdx) {
+    private Graph(T[] nodes, int[] inDegree, List<Integer>[] adjacencyList, int[] outDegree, List<Integer>[] reverseAdjacencyList, List<Integer> zeroDegreeIdx) {
         this.nodes = nodes;
         this.inDegree = inDegree;
         this.adjacencyList = adjacencyList;
+        this.outDegree = outDegree;
+        this.reverseAdjacencyList = reverseAdjacencyList;
         this.zeroDegreeIdx = zeroDegreeIdx;
     }
 
@@ -44,6 +56,10 @@ public class Graph<T> {
 
     public List<Integer> getAdjacencyListByIdx(int idx) {
         return adjacencyList[idx];
+    }
+
+    public List<Integer> getReverseAdjacencyListByIdx(int idx) {
+        return reverseAdjacencyList[idx];
     }
 
     /**
@@ -145,7 +161,20 @@ public class Graph<T> {
         for (int i = 0; i < newAdjacencyList.size(); i++) {
             newAdjacencyListArr[i] = newAdjacencyList.get(i);
         }
-        return new Graph<>(newNodesArr, newInDegreeArr, newAdjacencyListArr, newZeroDegreeIndex);
+        int[] outDegree = new int[newInDegree.size()];
+        for (int i = 0; i < newAdjacencyListArr.length; i++) {
+            outDegree[i] = newAdjacencyListArr[i].size();
+        }
+        List<Integer>[] reverseAdjacencyList = new List[newAdjacencyList.size()];
+        for (int i = 0; i < reverseAdjacencyList.length; i++) {
+            reverseAdjacencyList[i] = new ArrayList<>();
+        }
+        for (int i = 0; i < newAdjacencyListArr.length; i++) {
+            for (Integer to : newAdjacencyListArr[i]) {
+                reverseAdjacencyList[to].add(i);
+            }
+        }
+        return new Graph<>(newNodesArr, newInDegreeArr, newAdjacencyListArr, outDegree, reverseAdjacencyList, newZeroDegreeIndex);
     }
 
     /**
@@ -219,7 +248,9 @@ public class Graph<T> {
             T[] nodes = (T[]) new Object[idx];
             nodeMap.forEach((node, index) -> nodes[index] = node);
             int[] inDegree = new int[idx];
+            int[] outDegree = new int[idx];
             List<Integer>[] adjacencyList = new List[idx];
+            List<Integer>[] reverseAdjacencyList = new List[idx];
             for (Edge<T> edge : edges) {
                 Integer fromIdx = nodeMap.get(edge.getFrom());
                 Integer toIdx = nodeMap.get(edge.getTo());
@@ -227,6 +258,8 @@ public class Graph<T> {
                 assert toIdx != null;
                 // 入度表加 1
                 inDegree[toIdx]++;
+                // 出度表加 1
+                outDegree[fromIdx]++;
                 // 邻接表添加后继节点索引
                 List<Integer> adj = adjacencyList[fromIdx];
                 if (adj == null) {
@@ -234,6 +267,13 @@ public class Graph<T> {
                     adjacencyList[fromIdx] = adj;
                 }
                 adj.add(toIdx);
+                // 反向邻接表添加前置节点索引
+                List<Integer> reverseAdj = reverseAdjacencyList[toIdx];
+                if (reverseAdj == null) {
+                    reverseAdj = new ArrayList<>();
+                    reverseAdjacencyList[toIdx] = reverseAdj;
+                }
+                reverseAdj.add(fromIdx);
             }
 
             // 入度为 0 的节点
@@ -243,7 +283,7 @@ public class Graph<T> {
                     zeroDegreeIdx.add(i);
                 }
             }
-            return new Graph<>(nodes, inDegree, adjacencyList, zeroDegreeIdx);
+            return new Graph<>(nodes, inDegree, adjacencyList, outDegree, reverseAdjacencyList, zeroDegreeIdx);
         }
     }
 
